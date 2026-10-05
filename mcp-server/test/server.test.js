@@ -200,18 +200,24 @@ test('MCP tool calls over stdio', async t => {
     });
 });
 
-test('README OpenCode example configures the server directly under mcp', () => {
+test('README OpenCode example uses the OpenCode 2.x mcp.servers layout', () => {
     const readme = readFileSync(resolve(root, 'README.md'), 'utf8');
     const example = JSON.parse(readme.match(/```json\s*([\s\S]*?)```/)[1]);
-    assert.equal(example.mcp['vk-docs'].type, 'local');
-    assert.equal(example.mcp['vk-docs'].command[0], 'node');
-    assert.equal(example.mcp.servers, undefined);
+    // OpenCode 2.x reads servers only from mcp.servers; a flat mcp.<name> entry is legacy 1.x syntax.
+    assert.deepEqual(Object.keys(example.mcp), ['servers']);
+    const server = example.mcp.servers['vk-docs'];
+    assert.equal(server.type, 'local');
+    assert.equal(server.command[0], 'node');
+    // 2.x replaced `enabled` with `disabled`; servers are enabled by default.
+    assert.equal(server.enabled, undefined);
+    assert.notEqual(server.disabled, true);
+    assert.ok(readme.includes(`opencode mcp add vk-docs -- node "${server.command[1]}"`));
 });
 
 test('README Codex and Claude Code examples use the same stdio entry point', () => {
     const readme = readFileSync(resolve(root, 'README.md'), 'utf8');
     const examples = [...readme.matchAll(/```json\s*([\s\S]*?)```/g)].map(match => JSON.parse(match[1]));
-    const expectedPath = examples.find(example => example.mcp).mcp['vk-docs'].command[1];
+    const expectedPath = examples.find(example => example.mcp).mcp.servers['vk-docs'].command[1];
     const claude = examples.find(example => example.mcpServers).mcpServers['vk-docs'];
     assert.deepEqual(claude, { type: 'stdio', command: 'node', args: [expectedPath] });
     // Check the documented minimal TOML shape without adding a parser dependency.

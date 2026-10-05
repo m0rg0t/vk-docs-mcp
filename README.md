@@ -73,16 +73,23 @@ node dist/index.js
 
 JSON и JSONC поддерживаются; расположение и приоритеты описаны в [документации конфигурации](https://opencode.ai/docs/config/). При использовании WSL устанавливайте сервер в той же среде, где запущен OpenCode, и используйте Linux-пути.
 
-Добавьте `vk-docs` внутрь объекта `mcp` верхнего уровня. **Сохраните остальные настройки и MCP-серверы**; если `mcp` уже есть, добавьте запись в него, не создавая второй ключ `mcp`.
+Проще всего добавить сервер командой OpenCode 2.x из корня рабочего проекта (с `--global` — для всех проектов), подставив свой абсолютный путь:
+
+```sh
+opencode mcp add vk-docs -- node "C:/Users/you/tools/vk-docs-mcp/mcp-server/dist/index.js"
+```
+
+Или вручную: добавьте `vk-docs` в `mcp.servers`. **Сохраните остальные настройки и MCP-серверы**; если `mcp` или `servers` уже есть, добавьте запись в них, не создавая второй ключ.
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "vk-docs": {
-      "type": "local",
-      "command": ["node", "C:/Users/you/tools/vk-docs-mcp/mcp-server/dist/index.js"],
-      "enabled": true
+    "servers": {
+      "vk-docs": {
+        "type": "local",
+        "command": ["node", "C:/Users/you/tools/vk-docs-mcp/mcp-server/dist/index.js"]
+      }
     }
   }
 }
@@ -98,7 +105,7 @@ JSON и JSONC поддерживаются; расположение и прио
 
 Чтобы получить свой путь как готовую JSON-строку, выполните из `mcp-server`: `node -p "JSON.stringify(require('node:path').resolve('dist/index.js'))"`. Вставьте результат вместе с кавычками вместо второго элемента `command`. Сервер находит `data/` относительно своего файла, поэтому настройка рабочей папки не требуется.
 
-Серверы указываются **непосредственно в `mcp`, без `servers`**: [локальные MCP-серверы OpenCode](https://opencode.ai/docs/mcp-servers/#local). Здесь используются stdio и прямой запуск `node`, без URL и авторизации.
+В OpenCode 2.x серверы указываются **в `mcp.servers`**, а не прямо в `mcp`; сервер включён по умолчанию, а временно отключить его можно полем `"disabled": true` (поле `enabled` из 1.x в 2.x заменено на `disabled`). Старый формат 1.x (`mcp.vk-docs` с `enabled`) OpenCode 2.x пока читает как устаревший, а актуальные версии 1.x понимают и `mcp.servers`, поэтому пример выше подходит для обеих веток. См. [MCP-серверы OpenCode](https://opencode.ai/docs/mcp-servers/). Здесь используются stdio и прямой запуск `node`, без URL и авторизации.
 
 ### Проверить подключение
 
@@ -235,7 +242,7 @@ claude mcp get vk-docs
 - **`ENOENT ... package.json`:** выполняйте npm-команды в `vk-docs-mcp/mcp-server`, не в корне репозитория.
 - **`ERR_MODULE_NOT_FOUND` для SDK/Zod:** выполните `npm ci --ignore-scripts` в `mcp-server`. Если не найден `dist/index.js`, проверьте абсолютный путь и полноту скачанного репозитория.
 - **`npm ci` сообщает о несовместимой версии Node.js или lock-файле:** проверьте версию Node.js и что `package.json` и `package-lock.json` взяты из одной версии репозитория. Не удаляйте lock-файл ради обхода ошибки.
-- **OpenCode не видит сервер:** проверьте синтаксис JSON, вложенность `mcp.vk-docs`, абсолютный путь и `enabled`. Конфигурация проекта может переопределить глобальную. Перезапустите OpenCode и повторите `opencode mcp list`.
+- **OpenCode не видит сервер:** проверьте синтаксис JSON, вложенность `mcp.servers.vk-docs`, абсолютный путь и что не задано `"disabled": true`. Конфигурация проекта может переопределить глобальную. Перезапустите OpenCode и повторите `opencode mcp list`.
 - **Codex не видит сервер:** проверьте `mcp_servers.vk-docs`, путь и доверие к проекту для `.codex/config.toml`; откройте новую сессию и проверьте `/mcp`.
 - **Claude Code не видит сервер:** проверьте область настройки и рабочий проект, `mcpServers.vk-docs`, затем `claude mcp get vk-docs`. Ожидающее подтверждение project-сервера завершите в интерактивной сессии.
 - **WSL или разные окружения:** Node.js, зависимости и сервер должны быть доступны в среде запуска клиента; в WSL используйте Linux-пути.
